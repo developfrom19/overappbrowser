@@ -204,6 +204,21 @@ public class OverAppBrowser extends CordovaPlugin {
         else if (action.equals("close")) {
             closeDialog();
         }
+        else if(action.equals("resize")){  /*Custom Code for resize*/
+            final HashMap<String, Integer> params = new HashMap<String, Integer>();
+
+            params.put("x", args.getInt(0));
+            params.put("y", args.getInt(1));
+            params.put("width", args.getInt(2));
+            params.put("height", args.getInt(3));
+
+            this.cordova.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    resizeDialog(params);
+                }
+            });
+        }
         else if (action.equals("injectScriptCode")) {
             String jsWrapper = null;
             if (args.getBoolean(1)) {
@@ -605,6 +620,55 @@ public class OverAppBrowser extends CordovaPlugin {
         this.cordova.getActivity().runOnUiThread(runnable);
         return "";
     }
+    /*Custom Code*/
+    public void resizeDialog(HashMap<String, Integer> params) {
+        final WebView childView = this.inAppWebView;
+        final HashMap<String, Integer> webViewParams1 = params;
+        // The JS protects against multiple calls, so this should happen only when
+        // closeDialog() is called by other native code.
+        if (childView == null) {
+            return;
+        }
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+            /**
+             * Convert our DIP units to Pixels
+             *
+             * @return int
+             */
+            private int dpToPixels(int dipValue) {
+                int value = (int) TypedValue.applyDimension( TypedValue.COMPLEX_UNIT_DIP,
+                        (float) dipValue,
+                        cordova.getActivity().getResources().getDisplayMetrics()
+                );
+
+                return value;
+            }
+
+            @Override
+            public void run() {
+                Window window = dialog.getWindow();
+                window.setAttributes(dialog.getWindow().getAttributes());
+
+                childView.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+                childView.getSettings().setLoadWithOverviewMode(true);
+                childView.getSettings().setUseWideViewPort(false);
+                childView.requestFocus();
+                childView.requestFocusFromTouch();
+
+                WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+                lp.copyFrom(dialog.getWindow().getAttributes());
+                lp.x = this.dpToPixels(webViewParams1.get("x"));
+                lp.y = this.dpToPixels(webViewParams1.get("y"));
+                lp.width = this.dpToPixels(webViewParams1.get("width"));
+                lp.height = this.dpToPixels(webViewParams1.get("height"));
+
+                dialog.setContentView(childView);
+                dialog.getWindow().setAttributes(lp);
+            }
+        });
+        
+    }
+
 
     /**
      * Create a new plugin success result and send it back to JavaScript
