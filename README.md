@@ -1,6 +1,9 @@
 OverAppBrowser 1.2
 ==================
 
+*Added resize java code to support android
+
+
 Render a webview over your cordova webview (ios and android).
 
 Installation
